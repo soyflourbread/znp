@@ -1,6 +1,7 @@
 use crate::command;
 
 /// See Z-stack Monitor and Test API, 2.1.1.
+#[derive(Debug, Clone)]
 pub struct Packet {
     /// 0xFE, start position of packet
     start_of_frame: u8,
@@ -17,11 +18,6 @@ pub enum Error {
 
     #[error("input ended unexpectedly")]
     UnexpectedEOF,
-    #[error("mismatched packet length, expected: {expected}, actual: {actual}")]
-    MismatchedLength {
-        expected: usize,
-        actual: usize,
-    },
     #[error("frame corrupted")]
     FrameCorrupted,
 }
@@ -38,25 +34,33 @@ impl Packet {
         }
     }
 
-    pub fn from_input(mut input: Vec<u8>) -> Result<Self, Error> {
-        println!("input: {:?}", input);
-        if input.len() < 5 { // input contains at least SOF (1), LEN (1), CMD (2), FCS (1)
-            return Err(Error::UnexpectedEOF);
+    pub fn from_reader(mut reader: impl std::io::Read) -> Result<Self, Error> {
+        let mut start_of_frame = u8::MIN;
+        reader.read_exact(std::slice::from_mut(&mut start_of_frame))
+            .map_err(|_| Error::UnexpectedEOF)?;
+        let mut data_len = u8::MIN;
+        reader.read_exact(std::slice::from_mut(&mut data_len))
+            .map_err(|_| Error::UnexpectedEOF)?;
+        println!("data_len={}, sof={}", data_len, start_of_frame);
+        let mut data_frame = vec![u8::MIN; data_len as usize + 2];
+        reader.read_exact(data_frame.as_mut_slice())
+            .map_err(|_| Error::UnexpectedEOF)?;
+        let mut frame_check_sequence = u8::MIN;
+        reader.read_exact(std::slice::from_mut(&mut frame_check_sequence))
+            .map_err(|_| Error::UnexpectedEOF)?;
+        println!(
+            "frame: {:?}, data_len={}, sof={}, fcs={}",
+            data_frame, data_len, start_of_frame, frame_check_sequence
+        );
+        
+        let mut command = vec![data_len];
+        command.extend(data_frame);
+        let frame_check_sequence_target = command.iter()
+            .fold(u8::MIN, |acc, &e| acc ^ e);
+        if frame_check_sequence != frame_check_sequence_target {
+            return Err(Error::FrameCorrupted);
         }
-
-        let [start_of_frame, data_len] = [input[0], input[1]];
-        let packet_len = data_len as usize + 5;
-
-        input.truncate(packet_len);
-        if input.len() != packet_len {
-            return Err(Error::MismatchedLength {
-                expected: packet_len,
-                actual: input.len(),
-            });
-        }
-        let frame_check_sequence = input.pop().ok_or(Error::UnexpectedEOF)?;
-        let command = input.drain(2..)
-            .collect::<Vec<_>>();
+        
         let ret = Self {
             start_of_frame,
             command,
