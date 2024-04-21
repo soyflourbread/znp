@@ -301,6 +301,7 @@ name = "znp"
 version = "0.1.0"
 dependencies = [
  "serialport",
+ "thiserror",
  "znp_macros",
  "znp_types",
 ]

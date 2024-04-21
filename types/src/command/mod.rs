@@ -56,6 +56,9 @@ pub trait Command {
 
 pub mod ser {
     pub trait Command: super::Command {
+        fn is_empty(&self) -> bool {
+            self.len() < 1
+        }
         fn len(&self) -> u8;
         fn data(&self) -> Vec<u8>;
         fn serialize(&self) -> Vec<u8> {

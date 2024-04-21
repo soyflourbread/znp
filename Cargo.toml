@@ -10,3 +10,4 @@ edition = "2021"
 znp_macros = { path = "macros" }
 znp_types = { path = "types" }
 serialport = "4.3.0"
+thiserror = "1.0.59"
