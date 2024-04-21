@@ -4,11 +4,11 @@ use crate::command;
 #[derive(Debug, Clone)]
 pub struct Packet {
     /// 0xFE, start position of packet
-    start_of_frame: u8,
+    pub start_of_frame: u8,
     /// monitor test command
-    command: Vec<u8>,
+    pub command: Vec<u8>,
     /// ensure packet integrity, XOR of `command`
-    frame_check_sequence: u8,
+    pub frame_check_sequence: u8,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -41,7 +41,6 @@ impl Packet {
         let mut data_len = u8::MIN;
         reader.read_exact(std::slice::from_mut(&mut data_len))
             .map_err(|_| Error::UnexpectedEOF)?;
-        println!("data_len={}, sof={}", data_len, start_of_frame);
         let mut data_frame = vec![u8::MIN; data_len as usize + 2];
         reader.read_exact(data_frame.as_mut_slice())
             .map_err(|_| Error::UnexpectedEOF)?;
@@ -49,7 +48,7 @@ impl Packet {
         reader.read_exact(std::slice::from_mut(&mut frame_check_sequence))
             .map_err(|_| Error::UnexpectedEOF)?;
         println!(
-            "frame: {:?}, data_len={}, sof={}, fcs={}",
+            "frame: {:x?}, data_len={}, sof={}, fcs={}",
             data_frame, data_len, start_of_frame, frame_check_sequence
         );
         

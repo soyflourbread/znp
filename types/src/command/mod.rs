@@ -65,7 +65,7 @@ pub mod ser {
             let mut ret = Vec::with_capacity(self.len() as usize + 3);
             ret.push(self.len());
             ret.extend(cmd);
-            ret.extend(self.data());
+            ret.extend(self.data().into_iter().rev());  // See Z-stack Monitor and Test API, 2.
             ret
         }
     }
@@ -99,10 +99,10 @@ pub mod de {
         type Output;
         fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, Error>;
         fn deserialize(&self, mut input: Vec<u8>) -> Result<Self::Output, Error> {
-            if input.len() < 2 {
+            if input.len() < 3 {
                 return Err(Error::UnexpectedEOF);
             }
-            let mut cmd = [input[0], input[1]];
+            let mut cmd = [input[1], input[2]];
 
             const COMMAND_TYPE_FLAG: u8 = 0b11100000u8;
             let command_type = cmd[0] & COMMAND_TYPE_FLAG;
@@ -110,18 +110,17 @@ pub mod de {
             if command_type != Self::RESPONSE_TYPE as u8 {
                 return Err(Error::MismatchedType {
                     expected: Self::RESPONSE_TYPE,
-                    actual: command_type
+                    actual: command_type,
                 });
             }
             if cmd != Self::ID.to_cmd() {
                 return Err(Error::MismatchedID { expected: Self::ID.to_cmd(), actual: cmd });
             }
 
-            let data_frame = input.drain(2..)
+            let data_frame = input.drain(3..)
+                .rev() // See Z-stack Monitor and Test API, 2.
                 .collect::<Vec<_>>();
             self.to_output(data_frame)
         }
     }
 }
-
-
