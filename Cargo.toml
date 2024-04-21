@@ -1,0 +1,12 @@
+[workspace]
+members = ["macros", "types"]
+
+[package]
+name = "znp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+znp_macros = { path = "macros" }
+znp_types = { path = "types" }
+serialport = "4.3.0"

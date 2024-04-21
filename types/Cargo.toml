@@ -1,0 +1,8 @@
+[package]
+name = "znp_types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0.59"
+znp_macros = { path = "../macros" }
