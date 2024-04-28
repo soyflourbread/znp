@@ -44,9 +44,7 @@ pub struct CommandID {
 }
 
 impl CommandID {
-    pub fn to_cmd(&self) -> [u8; 2] {
-        [self.subsystem as u8, self.id]
-    }
+    pub fn to_cmd(&self) -> [u8; 2] { [self.subsystem as u8, self.id] }
 }
 
 pub trait Command {
@@ -57,9 +55,7 @@ pub trait Command {
 
 pub mod ser {
     pub trait Command: super::Command {
-        fn is_empty(&self) -> bool {
-            self.len() < 1
-        }
+        fn is_empty(&self) -> bool { self.len() < 1 }
         fn len(&self) -> u8;
         fn data(&self) -> Vec<u8>;
         fn serialize(&self) -> Vec<u8> {
@@ -69,7 +65,7 @@ pub mod ser {
             let mut ret = Vec::with_capacity(self.len() as usize + 3);
             ret.push(self.len());
             ret.extend(cmd);
-            ret.extend(self.data().into_iter().rev()); // See Z-stack Monitor and Test API, 2.
+            ret.extend(self.data().into_iter());
             ret
         }
     }
@@ -139,10 +135,7 @@ pub mod de {
                 });
             }
 
-            let data_frame = input
-                .drain(3..)
-                .rev() // See Z-stack Monitor and Test API, 2.
-                .collect::<Vec<_>>();
+            let data_frame = input.drain(3..).collect::<Vec<_>>();
             debug!(
                 "recv response data: {:?}, len={}",
                 data_frame,

@@ -1,0 +1,4 @@
+unstable_features = true
+
+fn_single_line = true
+struct_lit_single_line = true

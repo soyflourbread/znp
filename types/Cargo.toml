@@ -10,3 +10,5 @@ znp_macros.workspace = true
 enumflags2.workspace = true
 thiserror.workspace = true
 log.workspace = true
+
+bincode = "2.0.0-rc.3"

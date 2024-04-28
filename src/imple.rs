@@ -35,16 +35,10 @@ impl Session for ZNPImpl {
     fn send_command(&mut self, command: &impl Command) -> Result<(), Error> {
         self.tty.send_command(command)
     }
-    fn recv_frame(&mut self) -> Result<Packet, Error> {
-        self.tty.recv_frame()
-    }
+    fn recv_frame(&mut self) -> Result<Packet, Error> { self.tty.recv_frame() }
 }
 
 impl ZNP for ZNPImpl {
-    fn align_structs(&self) -> bool {
-        self.align_structs
-    }
-    fn capabilities(&self) -> BitFlags<Capability> {
-        self.capabilities
-    }
+    fn align_structs(&self) -> bool { self.align_structs }
+    fn capabilities(&self) -> BitFlags<Capability> { self.capabilities }
 }

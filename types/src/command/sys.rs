@@ -32,20 +32,26 @@ pub struct Ping {}
 impl de::Command for Ping {
     type Output = enumflags2::BitFlags<Capability>;
     fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, de::Error> {
-        if data_frame.len() != 2 {
+        #[derive(bincode::Decode)]
+        struct Rsp {
+            capabilities: u16,
+        }
+        let (rsp, len): (Rsp, usize) = bincode::decode_from_slice(
+            data_frame.as_slice(),
+            bincode::config::standard()
+                .with_little_endian()
+                .with_fixed_int_encoding(),
+        )
+        .map_err(|_| de::Error::UnexpectedEOF)?;
+        if len != data_frame.len() {
             debug!(
                 "data frame length mismatch, expected={}, actual={}",
-                2,
+                len,
                 data_frame.len()
             );
             return Err(de::Error::UnexpectedEOF);
         }
-        let mut ret = u16::MIN;
-        ret |= data_frame[0] as u16;
-        ret <<= 8;
-        ret |= data_frame[1] as u16;
-        debug!("recv capabilities bitflag: {}", ret);
-        let ret = Self::Output::from_bits_truncate(ret);
-        Ok(ret)
+        debug!("recv capabilities bitflag: {}", rsp.capabilities);
+        Ok(Self::Output::from_bits_truncate(rsp.capabilities))
     }
 }

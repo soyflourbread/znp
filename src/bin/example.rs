@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let port = "/dev/tty.usbserial-110".to_string();
     let mut controller = Builder::from_port(port).connect()?;
     println!(
-        "caps:{}, align: {}",
+        "caps: {}, align: {}",
         controller.capabilities(),
         controller.align_structs()
     );

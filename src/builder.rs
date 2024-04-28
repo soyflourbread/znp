@@ -12,9 +12,7 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn from_port(port: String) -> Self {
-        Self { port }
-    }
+    pub fn from_port(port: String) -> Self { Self { port } }
 
     pub fn connect(self) -> Result<impl ZNP, Error> {
         let mut tty = serialport::new(self.port, 115200)

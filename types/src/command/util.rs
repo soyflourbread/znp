@@ -13,12 +13,8 @@ pub struct AssocFindDevice {
 }
 
 impl ser::Command for AssocFindDevice {
-    fn len(&self) -> u8 {
-        1
-    }
-    fn data(&self) -> Vec<u8> {
-        vec![self.nth_active_entry]
-    }
+    fn len(&self) -> u8 { 1 }
+    fn data(&self) -> Vec<u8> { vec![self.nth_active_entry] }
 }
 
 impl de::Command for AssocFindDevice {
