@@ -1,4 +1,5 @@
 pub mod sys;
+pub mod util;
 
 /// Type of command, 3 bits.
 /// See Z-stack Monitor and Test API, 2.1.2.

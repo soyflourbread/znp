@@ -38,7 +38,7 @@ pub fn command_derive(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-#[proc_macro_derive(EmptyCommand)]
+#[proc_macro_derive(EmptyReq)]
 pub fn empty_command_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let DeriveInput { ident, .. } = input;

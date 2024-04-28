@@ -1,5 +1,7 @@
 use crate::command;
 
+use log::debug;
+
 /// See Z-stack Monitor and Test API, 2.1.1.
 #[derive(Debug, Clone)]
 pub struct Packet {
@@ -23,7 +25,7 @@ pub enum Error {
 }
 
 impl Packet {
-    pub fn from_command(command: impl command::ser::Command) -> Self {
+    pub fn from_command(command: &impl command::ser::Command) -> Self {
         let command = command.serialize();
         let frame_check_sequence = command.iter().fold(u8::MIN, |acc, &e| acc ^ e);
         Self {
@@ -50,7 +52,7 @@ impl Packet {
         reader
             .read_exact(std::slice::from_mut(&mut frame_check_sequence))
             .map_err(|_| Error::UnexpectedEOF)?;
-        println!(
+        debug!(
             "frame: {:x?}, data_len={}, sof={}, fcs={}",
             data_frame, data_len, start_of_frame, frame_check_sequence
         );
@@ -87,6 +89,6 @@ mod tests {
     fn ping_request() {
         let command = crate::command::sys::Ping {};
         let expected = vec![0xFE, 0x00, 0x21, 0x01, 0x20];
-        assert_eq!(Packet::from_command(command).serialize(), expected)
+        assert_eq!(Packet::from_command(&command).serialize(), expected)
     }
 }

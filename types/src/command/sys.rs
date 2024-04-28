@@ -1,6 +1,6 @@
 use log::{debug, error, info};
 
-use znp_macros::{Command, EmptyCommand};
+use znp_macros::{Command, EmptyReq};
 
 use super::{de, ser, Command, CommandID, Subsystem};
 use super::{CommandType, CommandType::*};
@@ -25,7 +25,7 @@ pub enum Capability {
     ZOAD = 0x1000,
 }
 
-#[derive(Command, EmptyCommand, Debug, Clone)]
+#[derive(Command, EmptyReq, Debug, Clone)]
 #[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x01)]
 pub struct Ping {}
 

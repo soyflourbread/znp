@@ -1,7 +1,13 @@
-use serialport::{DataBits, StopBits};
-use std::time::Duration;
-use znp_types::command::{de, ser, Command};
+use znp_types::command::sys::Capability;
+use znp_types::command::{de, ser};
 use znp_types::packet::{self, Packet};
+
+use std::time::Duration;
+
+mod builder;
+pub use builder::Builder;
+mod imple;
+use imple::ZNPImpl;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -16,44 +22,26 @@ pub enum Error {
     Packet(packet::Error),
 }
 
-pub struct ZNP {
-    tty: Box<dyn serialport::SerialPort>,
-}
-
-impl ZNP {
-    pub fn from_port(port: String) -> Result<Self, Error> {
-        let mut tty = serialport::new(port, 115200)
-            .data_bits(DataBits::Eight)
-            .stop_bits(StopBits::One)
-            .open()
-            .map_err(Error::TTY)?;
-        // reset ZNP board to skip bootloader
-        for (dtr, rts) in [(false, false), (false, true), (false, false)] {
-            tty.write_data_terminal_ready(dtr).map_err(Error::TTY)?;
-            tty.write_request_to_send(rts).map_err(Error::TTY)?;
+pub trait Session {
+    fn send_command(&mut self, command: &impl ser::Command) -> Result<(), Error>;
+    fn recv_frame(&mut self) -> Result<Packet, Error>;
+    fn request<C: ser::Command + de::Command>(&mut self, command: &C) -> Result<C::Output, Error> {
+        self.send_command(command)?;
+        loop {
+            let mut exec_fn = || -> Result<_, Box<dyn std::error::Error>> {
+                let frame = self.recv_frame()?;
+                let ret = command.deserialize(frame.command)?;
+                Ok(ret)
+            };
+            if let Ok(ret) = exec_fn() {
+                return Ok(ret);
+            }
+            std::thread::sleep(Duration::from_millis(500));
         }
-        std::thread::sleep(Duration::from_millis(150));
-
-        // clear tty
-        let clr = vec![0x10u8 ^ 0xFF; 256];
-        tty.write_all(clr.as_slice()).map_err(Error::IO)?;
-        std::thread::sleep(Duration::from_millis(2500));
-
-        let ret = Self { tty };
-        Ok(ret)
     }
 }
 
-impl ZNP {
-    pub fn send_command(&mut self, command: impl ser::Command) -> Result<(), Error> {
-        let packet = Packet::from_command(command).serialize();
-        self.tty.write_all(packet.as_slice()).map_err(Error::IO)?;
-
-        Ok(())
-    }
-
-    pub fn recv_frame(&mut self) -> Result<Packet, Error> {
-        let packet = Packet::from_reader(&mut self.tty).map_err(Error::Packet)?;
-        Ok(packet)
-    }
+pub trait ZNP: Session {
+    fn align_structs(&self) -> bool;
+    fn capabilities(&self) -> enumflags2::BitFlags<Capability>;
 }
