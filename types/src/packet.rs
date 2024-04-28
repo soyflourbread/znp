@@ -25,8 +25,7 @@ pub enum Error {
 impl Packet {
     pub fn from_command(command: impl command::ser::Command) -> Self {
         let command = command.serialize();
-        let frame_check_sequence = command.iter()
-            .fold(u8::MIN, |acc, &e| acc ^ e);
+        let frame_check_sequence = command.iter().fold(u8::MIN, |acc, &e| acc ^ e);
         Self {
             start_of_frame: 0xFE,
             command,
@@ -36,30 +35,33 @@ impl Packet {
 
     pub fn from_reader(mut reader: impl std::io::Read) -> Result<Self, Error> {
         let mut start_of_frame = u8::MIN;
-        reader.read_exact(std::slice::from_mut(&mut start_of_frame))
+        reader
+            .read_exact(std::slice::from_mut(&mut start_of_frame))
             .map_err(|_| Error::UnexpectedEOF)?;
         let mut data_len = u8::MIN;
-        reader.read_exact(std::slice::from_mut(&mut data_len))
+        reader
+            .read_exact(std::slice::from_mut(&mut data_len))
             .map_err(|_| Error::UnexpectedEOF)?;
         let mut data_frame = vec![u8::MIN; data_len as usize + 2];
-        reader.read_exact(data_frame.as_mut_slice())
+        reader
+            .read_exact(data_frame.as_mut_slice())
             .map_err(|_| Error::UnexpectedEOF)?;
         let mut frame_check_sequence = u8::MIN;
-        reader.read_exact(std::slice::from_mut(&mut frame_check_sequence))
+        reader
+            .read_exact(std::slice::from_mut(&mut frame_check_sequence))
             .map_err(|_| Error::UnexpectedEOF)?;
         println!(
             "frame: {:x?}, data_len={}, sof={}, fcs={}",
             data_frame, data_len, start_of_frame, frame_check_sequence
         );
-        
+
         let mut command = vec![data_len];
         command.extend(data_frame);
-        let frame_check_sequence_target = command.iter()
-            .fold(u8::MIN, |acc, &e| acc ^ e);
+        let frame_check_sequence_target = command.iter().fold(u8::MIN, |acc, &e| acc ^ e);
         if frame_check_sequence != frame_check_sequence_target {
             return Err(Error::FrameCorrupted);
         }
-        
+
         let ret = Self {
             start_of_frame,
             command,

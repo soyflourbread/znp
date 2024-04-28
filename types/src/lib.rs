@@ -1,2 +1,2 @@
-pub mod packet;
 pub mod command;
+pub mod packet;

@@ -1,10 +1,10 @@
-use std::io::{Write};
 use std::time::Duration;
-use serialport::{ClearBuffer, DataBits, SerialPortType, StopBits};
+
+use serialport::SerialPortType;
+
 use znp::ZNP;
 use znp_types::command::de::Command;
 use znp_types::command::sys::Ping;
-use znp_types::packet::Packet;
 
 fn get_first_usb_serial() -> String {
     let ports = serialport::available_ports().unwrap();
@@ -26,13 +26,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     controller.send_command(command.clone())?;
 
     loop {
-        let mut exec_fn = || -> Result<u16, Box<dyn std::error::Error>> {
+        let mut exec_fn = || -> Result<_, Box<dyn std::error::Error>> {
             let frame = controller.recv_frame()?;
             let capabilities = command.deserialize(frame.command)?;
             Ok(capabilities)
         };
         if let Ok(capabilities) = exec_fn() {
-            println!("capabilities: {capabilities:#x}");
+            println!("capabilities: {capabilities}");
             break;
         }
         std::thread::sleep(Duration::from_millis(500));

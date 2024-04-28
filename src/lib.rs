@@ -1,7 +1,7 @@
-use std::time::Duration;
 use serialport::{DataBits, StopBits};
-use znp_types::command::{Command, ser, de};
-use znp_types::packet::{Packet, self};
+use std::time::Duration;
+use znp_types::command::{de, ser, Command};
+use znp_types::packet::{self, Packet};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -29,10 +29,8 @@ impl ZNP {
             .map_err(Error::TTY)?;
         // reset ZNP board to skip bootloader
         for (dtr, rts) in [(false, false), (false, true), (false, false)] {
-            tty.write_data_terminal_ready(dtr)
-                .map_err(Error::TTY)?;
-            tty.write_request_to_send(rts)
-                .map_err(Error::TTY)?;
+            tty.write_data_terminal_ready(dtr).map_err(Error::TTY)?;
+            tty.write_request_to_send(rts).map_err(Error::TTY)?;
         }
         std::thread::sleep(Duration::from_millis(150));
 
@@ -48,16 +46,14 @@ impl ZNP {
 
 impl ZNP {
     pub fn send_command(&mut self, command: impl ser::Command) -> Result<(), Error> {
-        let packet = Packet::from_command(command)
-            .serialize();
+        let packet = Packet::from_command(command).serialize();
         self.tty.write_all(packet.as_slice()).map_err(Error::IO)?;
 
         Ok(())
     }
 
     pub fn recv_frame(&mut self) -> Result<Packet, Error> {
-        let packet = Packet::from_reader(&mut self.tty)
-            .map_err(Error::Packet)?;
+        let packet = Packet::from_reader(&mut self.tty).map_err(Error::Packet)?;
         Ok(packet)
     }
 }

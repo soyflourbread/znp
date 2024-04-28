@@ -1,13 +1,31 @@
 [workspace]
 members = ["macros", "types"]
 
-[package]
-name = "znp"
-version = "0.1.0"
+[workspace.package]
 edition = "2021"
+version = "0.1.0"
+authors = ["Clementine Bread <soyflourbread@gmail.com>"]
 
-[dependencies]
+[workspace.dependencies]
 znp_macros = { path = "macros" }
 znp_types = { path = "types" }
+
 serialport = "4.3.0"
+enumflags2 = { version = "0.7.9", features = ["std"] }
 thiserror = "1.0.59"
+log = "0.4"
+
+[package]
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+name = "znp"
+description = "library for interacting with TI ZNP Zigbee chips"
+
+[dependencies]
+znp_macros.workspace = true
+znp_types.workspace = true
+
+serialport.workspace = true
+thiserror.workspace = true
+log.workspace = true

@@ -68,7 +68,7 @@ pub mod ser {
             let mut ret = Vec::with_capacity(self.len() as usize + 3);
             ret.push(self.len());
             ret.extend(cmd);
-            ret.extend(self.data().into_iter().rev());  // See Z-stack Monitor and Test API, 2.
+            ret.extend(self.data().into_iter().rev()); // See Z-stack Monitor and Test API, 2.
             ret
         }
     }
@@ -76,6 +76,7 @@ pub mod ser {
 
 pub mod de {
     use crate::command::CommandType;
+    use log::{debug, error, trace};
 
     #[derive(thiserror::Error, Debug)]
     pub enum Error {
@@ -85,15 +86,9 @@ pub mod de {
         #[error("input ended unexpectedly")]
         UnexpectedEOF,
         #[error("mismatched command type, expected: {expected:?}, actual: {actual}")]
-        MismatchedType {
-            expected: CommandType,
-            actual: u8,
-        },
+        MismatchedType { expected: CommandType, actual: u8 },
         #[error("mismatched command id, expected: {expected:?}, actual: {actual:?}")]
-        MismatchedID {
-            expected: [u8; 2],
-            actual: [u8; 2],
-        },
+        MismatchedID { expected: [u8; 2], actual: [u8; 2] },
         #[error("error while parsing bytes `{0:?}`")]
         Parse(Vec<u8>),
     }
@@ -102,27 +97,56 @@ pub mod de {
         type Output;
         fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, Error>;
         fn deserialize(&self, mut input: Vec<u8>) -> Result<Self::Output, Error> {
+            debug!(
+                "deserializing command, subsys={:?}, id={}",
+                Self::ID.subsystem,
+                Self::ID.id
+            );
             if input.len() < 3 {
+                debug!(
+                    "input length too short, expected: >2, actual={}",
+                    input.len()
+                );
                 return Err(Error::UnexpectedEOF);
             }
             let mut cmd = [input[1], input[2]];
+            debug!("recv command id: {:?}", cmd);
 
             const COMMAND_TYPE_FLAG: u8 = 0b11100000u8;
             let command_type = cmd[0] & COMMAND_TYPE_FLAG;
             cmd[0] &= !COMMAND_TYPE_FLAG;
             if command_type != Self::RESPONSE_TYPE as u8 {
+                debug!(
+                    "command type mismatch, expected={:?}, actual={:?}",
+                    Self::RESPONSE_TYPE,
+                    command_type
+                );
                 return Err(Error::MismatchedType {
                     expected: Self::RESPONSE_TYPE,
                     actual: command_type,
                 });
             }
             if cmd != Self::ID.to_cmd() {
-                return Err(Error::MismatchedID { expected: Self::ID.to_cmd(), actual: cmd });
+                debug!(
+                    "command type mismatch, expected={:?}, actual={:?}",
+                    Self::RESPONSE_TYPE,
+                    command_type
+                );
+                return Err(Error::MismatchedID {
+                    expected: Self::ID.to_cmd(),
+                    actual: cmd,
+                });
             }
 
-            let data_frame = input.drain(3..)
+            let data_frame = input
+                .drain(3..)
                 .rev() // See Z-stack Monitor and Test API, 2.
                 .collect::<Vec<_>>();
+            debug!(
+                "recv response data: {:?}, len={}",
+                data_frame,
+                data_frame.len()
+            );
             self.to_output(data_frame)
         }
     }
