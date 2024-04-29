@@ -54,3 +54,18 @@ pub fn empty_command_derive(input: TokenStream) -> TokenStream {
     };
     output.into()
 }
+
+#[proc_macro_derive(PassRsp)]
+pub fn passthrough_response_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input);
+    let DeriveInput { ident, .. } = input;
+    let output = quote! {
+        impl de::Command for #ident {
+            type Output = Vec<u8>;
+            fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, de::Error> {
+                Ok(data_frame) // passthrough
+            }
+        }
+    };
+    output.into()
+}
