@@ -44,4 +44,6 @@ pub trait Session {
 pub trait ZNP: Session {
     fn align_structs(&self) -> bool;
     fn capabilities(&self) -> enumflags2::BitFlags<Capability>;
+
+    fn nvram_read(&mut self) {}
 }

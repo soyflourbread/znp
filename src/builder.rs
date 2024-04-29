@@ -32,10 +32,8 @@ impl Builder {
         tty.write_all(clr.as_slice()).map_err(Error::IO)?;
         std::thread::sleep(Duration::from_millis(2500));
 
-        let capabilities = tty.request(&Ping {})?;
-        let device = tty.request(&AssocFindDevice {
-            nth_active_entry: 0,
-        })?;
+        let capabilities = tty.request(&Ping::default())?;
+        let device = tty.request(&AssocFindDevice::new(0))?;
         let align_structs = match device.len() {
             28 => false,
             36 => true,

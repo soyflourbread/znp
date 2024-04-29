@@ -1,11 +1,11 @@
-use log::{debug, error, info};
+use log::debug;
 
 use znp_macros::{Command, EmptyReq};
 
-use super::{de, ser, Command, CommandID, Subsystem};
-use super::{CommandType, CommandType::*};
+use crate::command::CommandType::*;
+use crate::command::{de, ser, to_bincode_config, Command, CommandID, CommandType};
 
-const SUBSYS: Subsystem = Subsystem::IFaceSYS;
+use super::SUBSYS;
 
 /// Capability of the device, 2 bytes.
 /// See Z-stack Monitor and Test API, 3.8.1.2.
@@ -25,7 +25,7 @@ pub enum Capability {
     ZOAD = 0x1000,
 }
 
-#[derive(Command, EmptyReq, Debug, Clone)]
+#[derive(Command, EmptyReq, Default, Debug, Clone)]
 #[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x01)]
 pub struct Ping {}
 
@@ -36,13 +36,9 @@ impl de::Command for Ping {
         struct Rsp {
             capabilities: u16,
         }
-        let (rsp, len): (Rsp, usize) = bincode::decode_from_slice(
-            data_frame.as_slice(),
-            bincode::config::standard()
-                .with_little_endian()
-                .with_fixed_int_encoding(),
-        )
-        .map_err(|_| de::Error::UnexpectedEOF)?;
+        let (rsp, len): (Rsp, usize) =
+            bincode::decode_from_slice(data_frame.as_slice(), to_bincode_config())
+                .map_err(|_| de::Error::UnexpectedEOF)?;
         if len != data_frame.len() {
             debug!(
                 "data frame length mismatch, expected={}, actual={}",

@@ -1,5 +1,14 @@
+mod status;
 pub mod sys;
 pub mod util;
+
+pub use status::Status;
+
+fn to_bincode_config() -> impl bincode::config::Config {
+    bincode::config::standard()
+        .with_little_endian()
+        .with_fixed_int_encoding()
+}
 
 /// Type of command, 3 bits.
 /// See Z-stack Monitor and Test API, 2.1.2.
@@ -65,7 +74,7 @@ pub mod ser {
             let mut ret = Vec::with_capacity(self.len() as usize + 3);
             ret.push(self.len());
             ret.extend(cmd);
-            ret.extend(self.data().into_iter());
+            ret.extend(self.data());
             ret
         }
     }
@@ -73,7 +82,7 @@ pub mod ser {
 
 pub mod de {
     use crate::command::CommandType;
-    use log::{debug, error, trace};
+    use log::{debug, error};
 
     #[derive(thiserror::Error, Debug)]
     pub enum Error {
