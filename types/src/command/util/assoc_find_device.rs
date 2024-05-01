@@ -1,8 +1,9 @@
-use super::SUBSYS;
 use crate::command::CommandType::*;
 use crate::command::{de, ser, Command, CommandID, CommandType};
 
 use znp_macros::{Command, PassRsp};
+
+use super::SUBSYS;
 
 #[derive(Command, PassRsp, Debug, Clone)]
 #[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x49)]

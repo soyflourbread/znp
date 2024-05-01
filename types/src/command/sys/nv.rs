@@ -1,21 +1,22 @@
-use super::SUBSYS;
-use crate::command::CommandType::*;
-use crate::command::{de, ser, to_bincode_config, Command, CommandID, CommandType, Status};
-use log::debug;
+use crate::command::CommandType::{self, *};
+use crate::command::{de, deserialize_bincode, ser, serialize_bincode, Command, CommandID, Status};
+
+use znp_macros::Command;
+
 use num_traits::FromPrimitive;
 
-use crate::command::de::Error;
-use znp_macros::{Command, PassRsp};
+use log::debug;
 
-#[derive(Command, bincode::Encode, Debug, Clone)]
-#[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x33)]
-pub struct NVLength {
+use super::SUBSYS;
+
+#[derive(bincode::Encode, Debug, Clone, Copy)]
+pub struct NVID {
     sys_id: u8,
     item_id: u16,
     sub_id: u16,
 }
 
-impl NVLength {
+impl NVID {
     pub fn new(sys_id: u8, item_id: u16, sub_id: u16) -> Self {
         Self {
             sys_id,
@@ -25,56 +26,58 @@ impl NVLength {
     }
 }
 
+#[derive(Command, bincode::Encode, Debug, Clone)]
+#[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x32)]
+pub struct NVLength {
+    id: NVID,
+}
+
+impl NVLength {
+    pub fn new(id: NVID) -> Self { Self { id } }
+}
+
 impl ser::Command for NVLength {
     fn len(&self) -> u8 { 5 }
-    fn data(&self) -> Vec<u8> { bincode::encode_to_vec(self, to_bincode_config()).unwrap() }
+    fn data(&self) -> Vec<u8> { serialize_bincode(self) }
 }
 
 impl de::Command for NVLength {
-    type Output = u8;
-    fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, Error> {
-        if data_frame.len() != 1 {
-            return Err(Error::UnexpectedEOF);
+    type Output = u32;
+    fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, de::Error> {
+        #[derive(bincode::Decode)]
+        struct Rsp {
+            length: u32,
         }
-        Ok(data_frame[0])
+        let rsp: Rsp = deserialize_bincode(data_frame)?;
+        Ok(rsp.length)
     }
 }
 
 #[derive(Command, bincode::Encode, Debug, Clone)]
 #[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x33)]
 pub struct NVRead {
-    sys_id: u8,
-    item_id: u16,
-    sub_id: u16,
+    id: NVID,
     offset: u16,
     length: u8,
 }
 
 impl NVRead {
-    pub fn new(sys_id: u8, item_id: u16, sub_id: u16, offset: u16, length: u8) -> Self {
-        Self {
-            sys_id,
-            item_id,
-            sub_id,
-            offset,
-            length,
-        }
-    }
+    pub fn new(id: NVID, offset: u16, length: u8) -> Self { Self { id, offset, length } }
 }
 
 impl ser::Command for NVRead {
     fn len(&self) -> u8 { 8 }
-    fn data(&self) -> Vec<u8> { bincode::encode_to_vec(self, to_bincode_config()).unwrap() }
+    fn data(&self) -> Vec<u8> { serialize_bincode(self) }
 }
 
 impl de::Command for NVRead {
     type Output = (Status, Vec<u8>);
-    fn to_output(&self, mut data_frame: Vec<u8>) -> Result<Self::Output, Error> {
+    fn to_output(&self, mut data_frame: Vec<u8>) -> Result<Self::Output, de::Error> {
         if data_frame.len() < 2 {
-            return Err(Error::UnexpectedEOF);
+            return Err(de::Error::UnexpectedEOF);
         }
         let Some(status) = Status::from_u8(data_frame[0]) else {
-            return Err(Error::Unknown);
+            return Err(de::Error::Unknown);
         };
         let len = data_frame[1] as usize;
         let data_frame = data_frame.drain(2..).collect::<Vec<_>>();
@@ -84,7 +87,7 @@ impl de::Command for NVRead {
                 len,
                 data_frame.len()
             );
-            return Err(Error::UnexpectedEOF);
+            return Err(de::Error::UnexpectedEOF);
         }
         Ok((status, data_frame))
     }

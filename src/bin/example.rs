@@ -14,7 +14,7 @@ fn get_first_usb_serial() -> String {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let port = get_first_usb_serial();
-    let port = "/dev/tty.usbserial-110".to_string();
+    let port = std::env::var("ZNP_SERIAL").unwrap();
     let mut controller = Builder::from_port(port).connect()?;
     println!(
         "caps: {}, align: {}",

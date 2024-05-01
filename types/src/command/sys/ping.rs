@@ -1,9 +1,9 @@
-use log::debug;
+use crate::command::CommandType::*;
+use crate::command::{de, deserialize_bincode, ser, Command, CommandID, CommandType};
 
 use znp_macros::{Command, EmptyReq};
 
-use crate::command::CommandType::*;
-use crate::command::{de, ser, to_bincode_config, Command, CommandID, CommandType};
+use log::debug;
 
 use super::SUBSYS;
 
@@ -36,17 +36,7 @@ impl de::Command for Ping {
         struct Rsp {
             capabilities: u16,
         }
-        let (rsp, len): (Rsp, usize) =
-            bincode::decode_from_slice(data_frame.as_slice(), to_bincode_config())
-                .map_err(|_| de::Error::UnexpectedEOF)?;
-        if len != data_frame.len() {
-            debug!(
-                "data frame length mismatch, expected={}, actual={}",
-                len,
-                data_frame.len()
-            );
-            return Err(de::Error::UnexpectedEOF);
-        }
+        let rsp: Rsp = deserialize_bincode(data_frame)?;
         debug!("recv capabilities bitflag: {}", rsp.capabilities);
         Ok(Self::Output::from_bits_truncate(rsp.capabilities))
     }

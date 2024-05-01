@@ -7,6 +7,8 @@ use std::time::Duration;
 mod builder;
 pub use builder::Builder;
 mod imple;
+mod nv;
+
 use imple::ZNPImpl;
 
 #[derive(thiserror::Error, Debug)]
@@ -44,6 +46,4 @@ pub trait Session {
 pub trait ZNP: Session {
     fn align_structs(&self) -> bool;
     fn capabilities(&self) -> enumflags2::BitFlags<Capability>;
-
-    fn nvram_read(&mut self) {}
 }

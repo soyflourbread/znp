@@ -2,12 +2,32 @@ mod status;
 pub mod sys;
 pub mod util;
 
+use log::debug;
 pub use status::Status;
 
 fn to_bincode_config() -> impl bincode::config::Config {
     bincode::config::standard()
         .with_little_endian()
         .with_fixed_int_encoding()
+}
+
+fn serialize_bincode<E: bincode::enc::Encode>(val: E) -> Vec<u8> {
+    bincode::encode_to_vec(val, to_bincode_config()).unwrap()
+}
+
+fn deserialize_bincode<D: bincode::de::Decode>(data_frame: Vec<u8>) -> Result<D, de::Error> {
+    let (ret, len): (D, usize) =
+        bincode::decode_from_slice(data_frame.as_slice(), to_bincode_config())
+            .map_err(|_| de::Error::UnexpectedEOF)?;
+    if len != data_frame.len() {
+        debug!(
+            "data frame length mismatch, expected={}, actual={}",
+            len,
+            data_frame.len()
+        );
+        return Err(de::Error::UnexpectedEOF);
+    }
+    Ok(ret)
 }
 
 /// Type of command, 3 bits.
