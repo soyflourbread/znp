@@ -1,7 +1,7 @@
 mod nv;
 mod ping;
 
-pub use nv::{NVLength, NVRead, NVID};
+pub use nv::{ExNvIds, NVLength, NVRead, NvSysIds, NVID};
 pub use ping::{Capability, Ping};
 
 use crate::command::Subsystem;

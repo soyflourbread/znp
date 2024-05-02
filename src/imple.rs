@@ -8,6 +8,7 @@ use znp_types::packet::Packet;
 use std::io::Write;
 
 use enumflags2::BitFlags;
+use semver::Version;
 use serialport::SerialPort;
 
 impl Session for Box<dyn SerialPort> {
@@ -39,6 +40,8 @@ impl Session for ZNPImpl {
 }
 
 impl ZNP for ZNPImpl {
+    fn version(&self) -> Version { Version::new(3, 30, 0) }
+
     fn align_structs(&self) -> bool { self.align_structs }
     fn capabilities(&self) -> BitFlags<Capability> { self.capabilities }
 }

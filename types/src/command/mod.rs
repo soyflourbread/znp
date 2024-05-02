@@ -1,3 +1,4 @@
+mod reserved;
 mod status;
 pub mod sys;
 pub mod util;
@@ -78,12 +79,13 @@ impl CommandID {
 
 pub trait Command {
     const ID: CommandID;
-    const REQUEST_TYPE: CommandType;
-    const RESPONSE_TYPE: CommandType;
 }
 
 pub mod ser {
+    use crate::command::CommandType;
+
     pub trait Command: super::Command {
+        const REQUEST_TYPE: CommandType;
         fn is_empty(&self) -> bool { self.len() < 1 }
         fn len(&self) -> u8;
         fn data(&self) -> Vec<u8>;
@@ -120,6 +122,7 @@ pub mod de {
     }
 
     pub trait Command: super::Command {
+        const RESPONSE_TYPE: CommandType;
         type Output;
         fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, Error>;
         fn deserialize(&self, mut input: Vec<u8>) -> Result<Self::Output, Error> {

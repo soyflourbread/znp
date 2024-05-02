@@ -12,6 +12,7 @@ znp_types = { path = "types" }
 
 serialport = "4.3.0"
 enumflags2 = { version = "0.7.9", features = ["std"] }
+semver = "1.0.22"
 thiserror = "1.0.59"
 log = "0.4"
 
@@ -28,5 +29,6 @@ znp_types.workspace = true
 
 serialport.workspace = true
 enumflags2.workspace = true
+semver.workspace = true
 thiserror.workspace = true
 log.workspace = true

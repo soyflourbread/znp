@@ -4,6 +4,8 @@ use znp_types::packet::{self, Packet};
 
 use std::time::Duration;
 
+use semver::Version;
+
 mod builder;
 pub use builder::Builder;
 mod imple;
@@ -44,6 +46,8 @@ pub trait Session {
 }
 
 pub trait ZNP: Session {
+    fn version(&self) -> Version;
+
     fn align_structs(&self) -> bool;
     fn capabilities(&self) -> enumflags2::BitFlags<Capability>;
 }

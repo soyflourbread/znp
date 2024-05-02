@@ -1,4 +1,3 @@
-use crate::command::CommandType::*;
 use crate::command::{de, deserialize_bincode, ser, Command, CommandID, CommandType};
 
 use znp_macros::{Command, EmptyReq};
@@ -26,10 +25,12 @@ pub enum Capability {
 }
 
 #[derive(Command, EmptyReq, Default, Debug, Clone)]
-#[cmd(req_type = "SREQ", rsp_type = "SRSP", subsys = "SUBSYS", id = 0x01)]
+#[cmd(subsys = "SUBSYS", id = 0x01)]
+#[req(kind = "CommandType::SREQ")]
 pub struct Ping {}
 
 impl de::Command for Ping {
+    const RESPONSE_TYPE: CommandType = CommandType::SRSP;
     type Output = enumflags2::BitFlags<Capability>;
     fn to_output(&self, data_frame: Vec<u8>) -> Result<Self::Output, de::Error> {
         #[derive(bincode::Decode)]

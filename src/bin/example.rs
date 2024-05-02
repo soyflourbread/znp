@@ -1,6 +1,7 @@
 use serialport::SerialPortType;
 
-use znp::{Builder, ZNP};
+use znp::{Builder, Session, ZNP};
+use znp_types::command::sys::{ExNvIds, NVLength, NvSysIds, NVID};
 
 fn get_first_usb_serial() -> String {
     let ports = serialport::available_ports().unwrap();
@@ -21,6 +22,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         controller.capabilities(),
         controller.align_structs()
     );
+
+    let length = controller.request(&NVLength::new(NVID::new(
+        NvSysIds::ZStack as u8,
+        ExNvIds::TClkTable as u16,
+        0,
+    )))?;
+    println!("length: {}", length);
 
     Ok(())
 }

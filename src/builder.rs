@@ -1,8 +1,9 @@
+use semver::Version;
 use std::time::Duration;
 
 use serialport::{DataBits, StopBits};
 
-use znp_types::command::sys::Ping;
+use znp_types::command::sys::{ExNvIds, NVLength, NvSysIds, Ping, NVID};
 use znp_types::command::util::AssocFindDevice;
 
 use crate::{Error, Session, ZNPImpl, ZNP};
@@ -39,6 +40,13 @@ impl Builder {
             36 => true,
             _ => return Err(Error::Unknown),
         };
+
+        let version = Version::new(3, 30, 0);
+        let length = tty.request(&NVLength::new(NVID::new(
+            NvSysIds::ZStack as u8,
+            ExNvIds::TClkTable as u16,
+            0,
+        )))?;
 
         let ret = ZNPImpl {
             align_structs,
