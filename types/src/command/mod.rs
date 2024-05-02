@@ -103,6 +103,7 @@ pub mod ser {
 }
 
 pub mod de {
+    use crate::command::reserved::{CommandNotFound, ErrorCode};
     use crate::command::CommandType;
     use log::{debug, error};
 
@@ -119,6 +120,9 @@ pub mod de {
         MismatchedID { expected: [u8; 2], actual: [u8; 2] },
         #[error("error while parsing bytes `{0:?}`")]
         Parse(Vec<u8>),
+
+        #[error("command not found")]
+        CommandNotFound { error_code: ErrorCode },
     }
 
     pub trait Command: super::Command {
@@ -140,10 +144,25 @@ pub mod de {
             }
             let mut cmd = [input[1], input[2]];
             debug!("recv command id: {:?}", cmd);
+            let data_frame = input.drain(3..).collect::<Vec<_>>();
+            debug!(
+                "recv response data frame: {:?}, len={}",
+                data_frame,
+                data_frame.len()
+            );
 
             const COMMAND_TYPE_FLAG: u8 = 0b11100000u8;
             let command_type = cmd[0] & COMMAND_TYPE_FLAG;
             cmd[0] &= !COMMAND_TYPE_FLAG;
+            if command_type == CommandNotFound::RESPONSE_TYPE as u8
+                && cmd == <CommandNotFound as super::Command>::ID.to_cmd()
+            {
+                // TODO: handle exceptions
+                debug!("command {:?} not recognized by remote", Self::ID.to_cmd());
+                let error_code = CommandNotFound {}.to_output(data_frame)?;
+                return Err(Error::CommandNotFound { error_code });
+            }
+
             if command_type != Self::RESPONSE_TYPE as u8 {
                 debug!(
                     "command type mismatch, expected={:?}, actual={:?}",
@@ -157,22 +176,15 @@ pub mod de {
             }
             if cmd != Self::ID.to_cmd() {
                 debug!(
-                    "command type mismatch, expected={:?}, actual={:?}",
-                    Self::RESPONSE_TYPE,
-                    command_type
+                    "command id mismatch, expected={:?}, actual={:?}",
+                    Self::ID.to_cmd(),
+                    cmd
                 );
                 return Err(Error::MismatchedID {
                     expected: Self::ID.to_cmd(),
                     actual: cmd,
                 });
             }
-
-            let data_frame = input.drain(3..).collect::<Vec<_>>();
-            debug!(
-                "recv response data: {:?}, len={}",
-                data_frame,
-                data_frame.len()
-            );
             self.to_output(data_frame)
         }
     }
