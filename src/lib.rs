@@ -24,6 +24,11 @@ pub enum Error {
     IO(std::io::Error),
     #[error("packet error: {0:?}")]
     Packet(packet::Error),
+
+    #[error("deserialization error: {0:?}")]
+    Deserialization(de::Error),
+    #[error("command not found")]
+    CommandNotFound,
 }
 
 pub trait Session {
@@ -32,13 +37,21 @@ pub trait Session {
     fn request<C: ser::Command + de::Command>(&mut self, command: &C) -> Result<C::Output, Error> {
         self.send_command(command)?;
         loop {
-            let mut exec_fn = || -> Result<_, Box<dyn std::error::Error>> {
+            let mut exec_fn = || -> Result<_, Error> {
                 let frame = self.recv_frame()?;
-                let ret = command.deserialize(frame.command)?;
+                let ret = command
+                    .deserialize(frame.command)
+                    .map_err(Error::Deserialization)?;
                 Ok(ret)
             };
-            if let Ok(ret) = exec_fn() {
-                return Ok(ret);
+            match exec_fn() {
+                Ok(ret) => {
+                    return Ok(ret);
+                }
+                Err(Error::Deserialization(de::Error::CommandNotFound { .. })) => {
+                    return Err(Error::CommandNotFound);
+                }
+                _ => {}
             }
             std::thread::sleep(Duration::from_millis(500));
         }

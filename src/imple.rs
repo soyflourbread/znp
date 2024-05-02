@@ -26,6 +26,8 @@ impl Session for Box<dyn SerialPort> {
 }
 
 pub struct ZNPImpl {
+    pub(crate) version: Version,
+
     pub(crate) align_structs: bool,
     pub(crate) capabilities: enumflags2::BitFlags<Capability>,
 
@@ -40,7 +42,7 @@ impl Session for ZNPImpl {
 }
 
 impl ZNP for ZNPImpl {
-    fn version(&self) -> Version { Version::new(3, 30, 0) }
+    fn version(&self) -> Version { self.version.clone() }
 
     fn align_structs(&self) -> bool { self.align_structs }
     fn capabilities(&self) -> BitFlags<Capability> { self.capabilities }

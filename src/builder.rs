@@ -41,14 +41,17 @@ impl Builder {
             _ => return Err(Error::Unknown),
         };
 
-        let version = Version::new(3, 30, 0);
-        let length = tty.request(&NVLength::new(NVID::new(
+        let mut version = Version::new(3, 30, 0);
+        if let Err(crate::Error::CommandNotFound) = tty.request(&NVLength::new(NVID::new(
             NvSysIds::ZStack as u8,
             ExNvIds::TClkTable as u16,
             0,
-        )))?;
+        ))) {
+            version = Version::new(3, 0, 0);
+        }
 
         let ret = ZNPImpl {
+            version,
             align_structs,
             capabilities,
             tty,
